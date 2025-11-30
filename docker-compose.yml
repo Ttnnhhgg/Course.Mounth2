@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  user-management-db:
+    image: postgres:15
+    container_name: user_management_db
+    environment:
+      POSTGRES_DB: UserManagement
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password123!
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_management_data:/var/lib/postgresql/data
+    networks:
+      - inno_shop_network
+
+  product-management-db:
+    image: postgres:15
+    container_name: product_management_db
+    environment:
+      POSTGRES_DB: ProductManagement
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password123!
+    ports:
+      - "5433:5432"
+    volumes:
+      - product_management_data:/var/lib/postgresql/data
+    networks:
+      - inno_shop_network
+
+  user-management-api:
+    build:
+      context: .
+      dockerfile: src/UserManagement.API/Dockerfile
+    container_name: user_management_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=user-management-db;Port=5432;Database=UserManagement;Username=postgres;Password=Password123!
+      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - Jwt__Issuer=InnoShop
+      - Jwt__Audience=InnoShopUsers
+    ports:
+      - "5000:80"
+    depends_on:
+      - user-management-db
+    networks:
+      - inno_shop_network
+
+  product-management-api:
+    build:
+      context: .
+      dockerfile: src/ProductManagement.API/Dockerfile
+    container_name: product_management_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=product-management-db;Port=5432;Database=ProductManagement;Username=postgres;Password=Password123!
+      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - Jwt__Issuer=InnoShop
+      - Jwt__Audience=InnoShopUsers
+    ports:
+      - "5001:80"
+    depends_on:
+      - product-management-db
+    networks:
+      - inno_shop_network
+
+volumes:
+  user_management_data:
+  product_management_data:
+
+networks:
+  inno_shop_network:
+    driver: bridge
